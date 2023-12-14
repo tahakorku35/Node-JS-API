@@ -1,110 +1,43 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const nodeMailer = require("nodemailer");
 
 const cors = require('cors');
 const app = express();
 const env = require('dotenv').config();
 const connectDB = require('./config/db');
-const qr = require("qrcode"); 
-const Iyzipay = require('iyzipay');
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-let data = "https://unixcybervpn.com/";
-
-qr.toDataURL(data, function(err, code) {
-  if (err) {
-    console.log("Error:", err);
-    return;
-  }
-  // console.log(code); 
-});
-
-const iyzipay = new Iyzipay({
-  apiKey: 'sandbox-QeR7J7iJIkSdBbnxzc2vELqAGoPeehkv',
-  secretKey: 'sandbox-l6EKpeaaGPjz2rwLx5PjKlkpsP0ziE5r',
-  uri: 'https://sandbox-api.iyzipay.com'
-});
 
 
-async function pay(req, res) {
-  try {
-    const { cardHolderName, cardNumber, expireMonth, expireYear, cvc } = req.body;
 
-    const request = {
-      currency: Iyzipay.CURRENCY.USD, // Change the currency to US Dollars (USD)
-      conversationId: '123456789',
-      price: '1000', // Update the total price to $1000
-      paidPrice: '1000', // Update the paid price to $1000
-      currency: Iyzipay.CURRENCY.USD, // Change the currency to USD
-      installment: '1', // Taksit kullanılmayacak
-      basketId: 'B67832',
-      paymentChannel: Iyzipay.PAYMENT_CHANNEL.WEB,
-      paymentGroup: Iyzipay.PAYMENT_GROUP.PRODUCT,
-      paymentCard: {
-        cardHolderName,
-        cardNumber,
-        expireMonth,
-        expireYear,
-        cvc,
-      },
-      buyer: {
-        id: 'BY789',
-        name: 'John',
-        surname: 'Doe',
-        gsmNumber: '+905350000000',
-        email: 'email@email.com',
-        identityNumber: '74300864791',
-        lastLoginDate: '2015-10-05 12:43:35',
-        registrationDate: '2013-04-21 15:12:09',
-        registrationAddress: 'Nidakule Göztepe, Merdivenköy Mah. Bora Sok. No:1',
-        ip: '85.34.78.112',
-        city: 'Istanbul',
-        country: 'Turkey',
-        zipCode: '34732',
-      },
-      shippingAddress: {
-        contactName: 'Jane Doe',
-        city: 'Istanbul',
-        country: 'Turkey',
-        address: 'Nidakule Göztepe, Merdivenköy Mah. Bora Sok. No:1',
-        zipCode: '34742',
-      },
-      billingAddress: {
-        contactName: 'Jane Doe',
-        city: 'Istanbul',
-        country: 'Turkey',
-        address: 'Nidakule Göztepe, Merdivenköy Mah. Bora Sok. No:1',
-        zipCode: '34742',
-      },
-      basketItems: [
-        {
-          id: 'BI101',
-          name: 'Binocular',
-          category1: 'Collectibles',
-          itemType: Iyzipay.BASKET_ITEM_TYPE.PHYSICAL,
-          price: '1000', // Update the product price to $1000
-        },
-      ],
-    };
+const sendEmail = async (options) => {
+  const transporter = nodeMailer.createTransport({
+    host: process.env.SMPT_HOST,
+    port: process.env.SMPT_PORT,
+    service: process.env.SMPT_SERVICE,
+    auth: {
+      user: process.env.SMPT_MAIL,
+      pass: process.env.SMPT_PASSWORD,
+    },
+  });
+  
 
-    iyzipay.payment.create(request, (err, result) => {
-      if (err) {
-        return res.status(500).send(err);
-      }
-      if (result.status === 'success') {
-        return res.status(200).json({ status: 'success', message: 'Ödeme başarılı' });
-      } else {
-        return res.status(500).json({ status: 'error', message: 'Ödeme başarısız', error: result.errorMessage });
-      }
-    });
-  } catch (e) {
-    res.status(500).send(`İşlem Başarısız ${e}`);
-  }
-}
+  const mailOptions = {
+    from: process.env.SMPT_MAIL,
+    to: options.email,
+    subject: options.subject,
+    text: options.message,
+  };
 
-app.post('/pay',pay)
+  await transporter.sendMail(mailOptions);
+};
+module.exports = sendEmail;
+
+
+
 
 
 
@@ -114,6 +47,16 @@ const Router = require('./routes/users');
 const { userRegisterValidationRules, userLoginValidationRules, handleInputErrors } = require('./modules/middleware');
 const { registerUser, loginUser, getUserList, newPasswordUser, logoutUser, deleteUser, updatePasswordUser } = require('./handlers/user_handler');
 const { protect } = require('./modules/auth');
+
+const {  getSubscribedUser,subscribeUser} = require('./handlers/subscribed_handler');
+
+const { enrollUser,getEnrollUser} = require('./handlers/enroll_handler');
+const { createContact,getContact} = require('./handlers/contact_handler');
+
+
+app.post('/create-contact', createContact);
+app.post('/get-contact', getContact);
+
 
 // Port tanımlaması
 const port = process.env.PORT || 4000;
@@ -125,7 +68,12 @@ app.use('/api', protect, Router);
 app.get('/', (req, res) => {
   res.send('Hello World!');
 });
+app.post('/enroll-create',enrollUser);
+app.get('/enrolls', getEnrollUser);
 
+
+app.post('/subscribe-create',subscribeUser);
+app.get('/subscribe', getSubscribedUser);
 
 app.put('/new-password',handleInputErrors, newPasswordUser);
 app.get('/users', handleInputErrors, getUserList);

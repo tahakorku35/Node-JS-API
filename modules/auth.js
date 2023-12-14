@@ -10,6 +10,7 @@ const hashPassword = async (password) => {
   return await bcrypt.hash(password, 5)
 }
 
+
 const createJWT = async (user) => {
   const token = jwt.sign({
     id: user.id,

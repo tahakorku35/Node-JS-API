@@ -5,6 +5,7 @@ const validator = require('validator')
 const Enum = require('../config/Enum.js')
 const CustomError = require('../lib/Error.js')
 const Response = require('../lib/Response.js')
+const user_service = require('../services/user/user_service.js')
 
 
 const registerUser = async (req, res, next) => {
@@ -198,6 +199,12 @@ const updateUserDetail = async (req, res, next) => {
   }
 
 }
+
+
+
+
+
+
 
 module.exports = {
   registerUser,

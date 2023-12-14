@@ -23,6 +23,7 @@ class UserService extends BaseService {
   async updatePasswordUser(id, password) {
     return await this.update(id, { password })
   }
+ 
   
 }
 

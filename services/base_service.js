@@ -2,12 +2,11 @@ class BaseService {
   constructor(model) {
     this.model = model
   }
-
-
   // model oluşturma
   async create(object) {
     return await this.model.create(object)
   }
+  
 
   //belirtilen özelliğe göre çekme
   async findByProperty(property, value) {
@@ -27,9 +26,7 @@ class BaseService {
   async findAll() {
     return this.model.find()
   }
-  async findAllPopularVillas() {
-    return this.model.find().sort({'villa_popular': -1}).limit(10)  }
-
+  
   //id ye göre güncelleme
   async update(id, object) {
     return await this.model.findByIdAndUpdate(id, object, { new: true })
@@ -50,17 +47,12 @@ class BaseService {
   async findByQuery(query) {
     return await this.model.find(query)
   }
-  async findLastRatingSortedByDate(villa_id) {
-    return await this.model.findOne({ villa_id }).sort({ date: -1 });
-  }
-  async findNextSortedByDateUser(user_id) {
-    return await this.model.findOne({ user_id }).sort({ date: 1 });
-  }
-  async findLastSortedByDateUser(user_id) {
-    return await this.model.find({ user_id }).limit(5);
-  }
+ 
   async findByProperties(properties) {
     return await this.model.find(properties)
+  }
+  findOne(condition) {
+    return this.model.findOne(condition);
   }
 
 }
