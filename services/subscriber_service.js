@@ -1,7 +1,7 @@
 const BaseService = require('./base_service')
-const enrollModel = require('../models/enroll_model')
+const SubscriberModel = require('../models/subscriber_model')
 
-class enrollService extends BaseService {
+class subscriberService extends BaseService {
   createSubsribe(email) {
     return this.create({email})
   }
@@ -20,4 +20,4 @@ class enrollService extends BaseService {
   
 }
 
-module.exports = new enrollService(enrollModel)
+module.exports = new subscriberService(SubscriberModel)

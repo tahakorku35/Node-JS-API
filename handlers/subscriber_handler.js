@@ -1,4 +1,4 @@
-const enrollService = require('../services/enroll_service.js')
+const subscriberService = require('../services/subscriber_service.js')
 const validator = require('validator')
 const Enum = require('../config/Enum.js')
 const CustomError = require('../lib/Error.js')
@@ -7,12 +7,12 @@ const nodemailer = require('nodemailer');
 
 require('dotenv').config();
 
-const enrollUser = async (req, res, next) => {
+const subscriberCreate = async (req, res, next) => {
   const { email } = req.body;
 
   try {
     // kullanıcıların aboneliğini kontrol etme
-    const existingSubscription = await enrollService.getSubscriptionByEmail(email);
+    const existingSubscription = await subscriberService.getSubscriptionByEmail(email);
 
     if (existingSubscription) { 
 
@@ -22,7 +22,7 @@ const enrollUser = async (req, res, next) => {
     }
 
     // Yeni abonelik oluştur
-    const createdSubscription = await enrollService.createSubsribe(email);
+    const createdSubscription = await subscriberService.createSubsribe(email);
 
     // E-posta gönderme
 
@@ -53,6 +53,7 @@ const sendEmail = async (options) => {
     host: process.env.SMPT_HOST,
     port: process.env.SMPT_PORT,
     service: process.env.SMPT_SERVICE,
+    secure: true,
     auth: {
       user: process.env.SMPT_MAIL,
       pass: process.env.SMPT_PASSWORD,
@@ -72,10 +73,10 @@ const sendEmail = async (options) => {
 
 
 
-const getEnrollUser = async (req, res, next) => {
+const getCreateSubscriber = async (req, res, next) => {
      // abone olan tüm kullanıcıları listeleme
    try {
-    const subscribedUsers = await enrollService.findAllEnroll();
+    const subscribedUsers = await subscriberService.findAllEnroll();
     res.json({ subscribedUsers });
   } catch (error) {
     console.error('Error while fetching subscribed users:', error);
@@ -86,7 +87,7 @@ const getEnrollUser = async (req, res, next) => {
 
 
 module.exports = {
- enrollUser,
- getEnrollUser
+  subscriberCreate,
+  getCreateSubscriber
 
 }

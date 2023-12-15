@@ -1,9 +1,9 @@
 const mongoose = require('mongoose');
 
-const enrollSchema = new mongoose.Schema({
+const subscriberSchema = new mongoose.Schema({
   email: { type: String, required: true},
 }, { timestamps: true }); // timestamps özelliğini ekleyerek otomatik createdAt ve updatedAt alanlarını ekler
 
-const Enroll = mongoose.model('Enroll', enrollSchema);
+const Subscriber = mongoose.model('Subscriber', subscriberSchema);
 
-module.exports = Enroll;
+module.exports = Subscriber;

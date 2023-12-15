@@ -1,0 +1,31 @@
+const mongoose = require('mongoose');
+
+const subscriberSchema = new mongoose.Schema({
+  email: { type: String, required: true},
+}, { timestamps: true }); // timestamps özelliğini ekleyerek otomatik createdAt ve updatedAt alanlarını ekler
+
+const Subscriber = mongoose.model('Subscriber', subscriberSchema);
+
+module.exports = Subscriber;
+
+
+
+
+
+
+// smptp bilgileri 
+
+const sendEmail = async (options) => {
+  const transporter = nodemailer.createTransport({
+    host: 'metayildiz.com.tr', // SMTP sunucu adresi
+    port: 465, // SMTP portu (güvenli bağlantı için genellikle 465)
+    secure: true, // Güvenli bağlantı kullanılıyorsa true
+    auth: {
+      user: 'info@metayildiz.com.tr', // E-posta adresi
+      pass: '', // E-posta şifresi
+    },
+  });
+
+};
+
+

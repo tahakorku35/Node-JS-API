@@ -5,9 +5,10 @@ class contactService extends BaseService {
   createContact(ad,email,subject,message) {
     return this.create({ad,email,subject,message})
   }
-  findAllContact(){
+  getContactList(){
     return this.findAll()
   }
+
   findByContact(email){
     return this.getSubscriptionByUserId({email})
   }

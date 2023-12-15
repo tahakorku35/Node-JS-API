@@ -48,9 +48,8 @@ const { userRegisterValidationRules, userLoginValidationRules, handleInputErrors
 const { registerUser, loginUser, getUserList, newPasswordUser, logoutUser, deleteUser, updatePasswordUser } = require('./handlers/user_handler');
 const { protect } = require('./modules/auth');
 
-const {  getSubscribedUser,subscribeUser} = require('./handlers/subscribed_handler');
 
-const { enrollUser,getEnrollUser} = require('./handlers/enroll_handler');
+const { subscriberCreate,getCreateSubscriber} = require('./handlers/subscriber_handler');
 const { createContact,getContact} = require('./handlers/contact_handler');
 
 
@@ -68,12 +67,11 @@ app.use('/api', protect, Router);
 app.get('/', (req, res) => {
   res.send('Hello World!');
 });
-app.post('/enroll-create',enrollUser);
-app.get('/enrolls', getEnrollUser);
+app.post('/subscriber-create',subscriberCreate); // Abone olma
+app.get('/subscriber-get', getCreateSubscriber); // abone listeleme
 
 
-app.post('/subscribe-create',subscribeUser);
-app.get('/subscribe', getSubscribedUser);
+
 
 app.put('/new-password',handleInputErrors, newPasswordUser);
 app.get('/users', handleInputErrors, getUserList);
