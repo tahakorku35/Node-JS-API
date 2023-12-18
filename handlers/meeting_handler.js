@@ -76,7 +76,7 @@ async function sendEmailToYourself(firstname, lastname, phoneNumber, date1, emai
   // Email içeriği
   let mailOptions = {
     from: process.env.SMPT_MAIL,
-    to: 'tahakorkut02@gmail.com', // Kendi e-posta adresiniz
+    to: 'info@unixcyber.com.tr', // Kendi e-posta adresiniz
     replyTo: `"${firstname}" <${email}>`, // Gönderenin adı ve e-posta adresini kullanarak Reply-To'yu ayarla
     subject: 'Yeni Görüşme Oluşturuldu',
     text: `Yeni bir görüşme oluşturuldu.\n\nDetaylar:\nAdı: ${firstname}\nSoyadı: ${lastname}\nTelefon Numarası: ${phoneNumber}\nTarih: ${date1}\nEmail: ${email}`,
