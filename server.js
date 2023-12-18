@@ -14,8 +14,19 @@ app.use(bodyParser.json());
 const Router = require('./routes/users');
 
 const { userRegisterValidationRules, userLoginValidationRules, handleInputErrors } = require('./modules/middleware');
+
 const { registerUser, loginUser, getUserList, newPasswordUser, logoutUser, deleteUser, updatePasswordUser } = require('./handlers/user_handler');
 const { protect } = require('./modules/auth');
+
+const { createMeeting, updateMeeting,getMeeting } = require('./handlers/meeting_handler');
+
+
+
+app.post('/create-meeting', createMeeting);
+app.post('/get-meeting', getMeeting);
+app.put('/update-meeting/:id',updateMeeting)
+
+
 
 const { subscriberCreate, getCreateSubscriber } = require('./handlers/subscriber_handler');
 const { createContact, getContact } = require('./handlers/contact_handler');

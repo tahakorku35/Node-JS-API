@@ -35,6 +35,9 @@ class BaseService {
   async updateByProperty(property, value, object) {
     return await this.model.updateOne({ [property]: value }, object)
   }
+  async updateDocument(id, updatedFields) {
+    return this.model.findByIdAndUpdate(id, { $set: updatedFields }, { new: true });
+  }
 
   //id ye göre silme
   async delete(id) {
