@@ -7,40 +7,9 @@ const app = express();
 const env = require('dotenv').config();
 const connectDB = require('./config/db');
 
+app.use(cors()); // CORS middleware burada kullanılıyor
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
-
-
-
-
-const sendEmail = async (options) => {
-  const transporter = nodeMailer.createTransport({
-    host: process.env.SMPT_HOST,
-    port: process.env.SMPT_PORT,
-    service: process.env.SMPT_SERVICE,
-    auth: {
-      user: process.env.SMPT_MAIL,
-      pass: process.env.SMPT_PASSWORD,
-    },
-  });
-  
-
-  const mailOptions = {
-    from: process.env.SMPT_MAIL,
-    to: options.email,
-    subject: options.subject,
-    text: options.message,
-  };
-
-  await transporter.sendMail(mailOptions);
-};
-module.exports = sendEmail;
-
-
-
-
-
-
 
 const Router = require('./routes/users');
 
@@ -48,32 +17,25 @@ const { userRegisterValidationRules, userLoginValidationRules, handleInputErrors
 const { registerUser, loginUser, getUserList, newPasswordUser, logoutUser, deleteUser, updatePasswordUser } = require('./handlers/user_handler');
 const { protect } = require('./modules/auth');
 
-
-const { subscriberCreate,getCreateSubscriber} = require('./handlers/subscriber_handler');
-const { createContact,getContact} = require('./handlers/contact_handler');
-
+const { subscriberCreate, getCreateSubscriber } = require('./handlers/subscriber_handler');
+const { createContact, getContact } = require('./handlers/contact_handler');
 
 app.post('/create-contact', createContact);
 app.post('/get-contact', getContact);
 
-
 // Port tanımlaması
 const port = process.env.PORT || 4000;
 
-app.use(cors());
 app.use(express.json());
 app.use('/api', protect, Router);
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
 });
-app.post('/subscriber-create',subscriberCreate); // Abone olma
+app.post('/subscriber-create', subscriberCreate); // Abone olma
 app.get('/subscriber-get', getCreateSubscriber); // abone listeleme
 
-
-
-
-app.put('/new-password',handleInputErrors, newPasswordUser);
+app.put('/new-password', handleInputErrors, newPasswordUser);
 app.get('/users', handleInputErrors, getUserList);
 app.post('/user-register', userRegisterValidationRules, handleInputErrors, registerUser);
 app.post('/user-login', userLoginValidationRules, handleInputErrors, loginUser);
