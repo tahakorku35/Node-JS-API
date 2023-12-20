@@ -1,6 +1,8 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const nodeMailer = require("nodemailer");
+const https = require('https');
+const request = require('request');
 
 const cors = require('cors');
 const app = express();
@@ -21,6 +23,38 @@ const { protect } = require('./modules/auth');
 const { createMeeting, updateMeeting,getMeeting } = require('./handlers/meeting_handler');
 
 
+app.get('/getInstagram', (req, res) => {
+  const accessToken = process.env.INSTAGRAM_API_ACCESS_TOKEN;
+
+  const options = {
+    method: 'GET',
+    url: `https://graph.instagram.com/v12.0/me/media?fields=id,media_type,media_url,thumbnail_url,permalink,caption,timestamp&access_token=${accessToken}`,
+  };
+
+  request(options, (err, response, body) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send('Internal Server Error');
+    } else {
+      const data = JSON.parse(body);
+      res.json(data);
+    }
+  });
+})
+
+// Function to make a request using the 'request' library
+function makeRequest(options) {
+  return new Promise((resolve, reject) => {
+    request(options, (err, response, body) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(body);
+      }
+    });
+  });
+}
+
 
 app.post('/create-meeting', createMeeting);
 app.post('/get-meeting', getMeeting);
@@ -29,10 +63,12 @@ app.put('/update-meeting/:id',updateMeeting)
 
 
 const { subscriberCreate, getCreateSubscriber } = require('./handlers/subscriber_handler');
-const { createContact, getContact } = require('./handlers/contact_handler');
+const { createContact, getContact ,getInstagram } = require('./handlers/contact_handler');
 
 app.post('/create-contact', createContact);
 app.post('/get-contact', getContact);
+app.get('/instagram-posts', getInstagram);
+
 
 // Port tanımlaması
 const port = process.env.PORT || 4000;

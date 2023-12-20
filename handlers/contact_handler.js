@@ -1,6 +1,9 @@
 const contactService = require('../services/contact_service.js')
 const validator = require('validator')
 const Enum = require('../config/Enum.js')
+const axios = require('axios');
+
+
 const CustomError = require('../lib/Error.js')
 const Response = require('../lib/Response.js')
 const nodeMailer = require('nodemailer');
@@ -70,11 +73,46 @@ try {
 }
 }
 
+const getInstagram = async (req, res, next) => {
+  try {
+    const accessToken = process.env.INSTAGRAM_API_ACCESS_TOKEN;
+    const username = process.env.INSTAGRAM_API_USER_NAME; // Set the username to a constant value
 
+    if (!accessToken) {
+      throw new Error('Instagram API access token is missing.');
+    }
+
+    if (!username) {
+      throw new Error('Username is missing.');
+    }
+
+    const apiUrl = `https://graph.instagram.com/${username}/media?access_token=${accessToken}`;
+
+    const response = await axios.get(apiUrl);
+    const data = response.data;
+
+    if (data.error) {
+      throw new Error(`Instagram API Error: ${data.error.message}`);
+    }
+
+    const posts = data.data.map((post) => ({
+      title: post.title,
+      caption: post.caption,
+      likeCount: post.like_count,
+      commentCount: post.comment_count,
+      takenAt: post.taken_at,
+    }));
+
+    res.json({ posts });
+  } catch (error) {
+    next(error); // Pass the error to the error handler middleware
+  }
+}; 
 
 
 module.exports = {
   createContact,
-  getContact
+  getContact,
+  getInstagram
 
 }

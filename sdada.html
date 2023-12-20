@@ -1,31 +1,122 @@
+const express = require('express');
+const bodyParser = require('body-parser');
+const nodeMailer = require("nodemailer");
+const https = require('https');
 const mongoose = require('mongoose');
 
-const subscriberSchema = new mongoose.Schema({
-  email: { type: String, required: true},
-}, { timestamps: true }); // timestamps özelliğini ekleyerek otomatik createdAt ve updatedAt alanlarını ekler
+const request = require('request');
+const dns = require('dns');
 
-const Subscriber = mongoose.model('Subscriber', subscriberSchema);
+const cors = require('cors');
+const app = express();
+const env = require('dotenv').config();
+const connectDB = require('./config/db');
 
-module.exports = Subscriber;
+app.use(cors()); // CORS middleware burada kullanılıyor
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
 
+const Router = require('./routes/users');
+dns.resolve('example.com', (err, addresses) => {
+  if (err) {
+    console.error(err);
+  } else {
+    console.log('Adresler:', addresses);
+  }
+});
+const { userRegisterValidationRules, userLoginValidationRules, handleInputErrors } = require('./modules/middleware');
 
+const { registerUser, loginUser, getUserList, newPasswordUser, logoutUser, deleteUser, updatePasswordUser } = require('./handlers/user_handler');
+const { protect } = require('./modules/auth');
 
+const { createMeeting, updateMeeting,getMeeting } = require('./handlers/meeting_handler');
 
+const InstagramPost = mongoose.model('InstagramPost', {
+  id: String,
+  media_type: String,
+  media_url: String,
+  thumbnail_url: String,
+  permalink: String,
+  caption: String,
+  timestamp: String,
+});
 
-// smptp bilgileri 
+app.get('/getInstagramPosts', (req, res) => {
+  const accessToken = process.env.INSTAGRAM_API_ACCESS_TOKEN;
 
-const sendEmail = async (options) => {
-  const transporter = nodemailer.createTransport({
-    host: 'metayildiz.com.tr', // SMTP sunucu adresi
-    port: 465, // SMTP portu (güvenli bağlantı için genellikle 465)
-    secure: true, // Güvenli bağlantı kullanılıyorsa true
-    auth: {
-      user: 'info@metayildiz.com.tr', // E-posta adresi
-      pass: '', // E-posta şifresi
-    },
+  const options = {
+    method: 'GET',
+    url: `https://graph.instagram.com/v12.0/me/media?fields=id,media_type,media_url,thumbnail_url,permalink,caption,timestamp&access_token=${accessToken}`,
+  };
+
+  request(options, async (err, response, body) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send('Internal Server Error');
+    } else {
+      const data = JSON.parse(body);
+
+      // Save each post to the database
+      for (const postData of data.data) {
+        try {
+          const instagramPost = new InstagramPost(postData);
+          const savedPost = await instagramPost.save();
+          console.log('Post saved to the database:', savedPost);
+        } catch (saveErr) {
+          console.error('Error saving post to the database:', saveErr);
+        }
+      }
+
+      res.json(data);
+    }
   });
+});
 
+
+app.post('/create-meeting', createMeeting);
+app.post('/get-meeting', getMeeting);
+app.put('/update-meeting/:id',updateMeeting)
+
+
+
+const { subscriberCreate, getCreateSubscriber } = require('./handlers/subscriber_handler');
+const { createContact, getContact ,getInstagram } = require('./handlers/contact_handler');
+
+app.post('/create-contact', createContact);
+app.post('/get-contact', getContact);
+app.get('/instagram-posts', getInstagram);
+
+
+// Port tanımlaması
+const port = process.env.PORT || 4000;
+
+app.use(express.json());
+app.use('/api', protect, Router);
+
+app.get('/', (req, res) => {
+  res.send('Hello World!');
+});
+app.post('/subscriber-create', subscriberCreate); // Abone olma
+app.get('/subscriber-get', getCreateSubscriber); // abone listeleme
+
+app.put('/new-password', handleInputErrors, newPasswordUser);
+app.get('/users', handleInputErrors, getUserList);
+app.post('/user-register', userRegisterValidationRules, handleInputErrors, registerUser);
+app.post('/user-login', userLoginValidationRules, handleInputErrors, loginUser);
+// app.post('/user-logout/:id', handleInputErrors, logoutUser);
+// app.delete('/user-delete/:id', handleInputErrors, deleteUser);
+
+const startServer = () => {
+  try {
+    // Connect to DB
+    connectDB();
+
+    // Start & Listen to the requests
+    app.listen(port, () => console.log(`Server started listening on ${port}`));
+  } catch (error) {
+    console.log(error);
+  }
 };
 
-
+startServer();
