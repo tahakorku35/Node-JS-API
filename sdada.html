@@ -1,122 +1,105 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const nodeMailer = require("nodemailer");
-const https = require('https');
-const mongoose = require('mongoose');
+<!DOCTYPE html>
+<html lang="en">
 
-const request = require('request');
-const dns = require('dns');
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Instagram Posts Viewer</title>
+  <style>
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
 
-const cors = require('cors');
-const app = express();
-const env = require('dotenv').config();
-const connectDB = require('./config/db');
+    th,
+    td {
+      border: 1px solid #dddddd;
+      text-align: left;
+      padding: 8px;
+    }
 
-app.use(cors()); // CORS middleware burada kullanılıyor
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
+    th {
+      background-color: #f2f2f2;
+    }
 
+    img,
+    video {
+      width: 400px;
+      height: 300px;
+    }
+  </style>
+</head>
 
-const Router = require('./routes/users');
-dns.resolve('example.com', (err, addresses) => {
-  if (err) {
-    console.error(err);
-  } else {
-    console.log('Adresler:', addresses);
-  }
-});
-const { userRegisterValidationRules, userLoginValidationRules, handleInputErrors } = require('./modules/middleware');
+<body>
 
-const { registerUser, loginUser, getUserList, newPasswordUser, logoutUser, deleteUser, updatePasswordUser } = require('./handlers/user_handler');
-const { protect } = require('./modules/auth');
+  <table>
+    <thead>
+      <tr>
+        <th>Media</th>
+        <th>Caption</th>
+        <th>Timestamp</th>
+      </tr>
+    </thead>
+    <tbody id="instagramPostsTableBody"></tbody>
+  </table>
 
-const { createMeeting, updateMeeting,getMeeting } = require('./handlers/meeting_handler');
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const instagramPostsTableBody = document.getElementById("instagramPostsTableBody");
 
-const InstagramPost = mongoose.model('InstagramPost', {
-  id: String,
-  media_type: String,
-  media_url: String,
-  thumbnail_url: String,
-  permalink: String,
-  caption: String,
-  timestamp: String,
-});
+      function fetchInstagramPosts() {
+        fetch("/getInstagram")
+          .then(response => response.json())
+          .then(data => displayInstagramPosts(data))
+          .catch(error => {
+            console.error("Error fetching Instagram posts:", error);
+          });
+      }
 
-app.get('/getInstagramPosts', (req, res) => {
-  const accessToken = process.env.INSTAGRAM_API_ACCESS_TOKEN;
+      function formatTimestamp(timestamp) {
+        const options = {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        };
+        return new Date(timestamp).toLocaleDateString('en-US', options);
+      }
 
-  const options = {
-    method: 'GET',
-    url: `https://graph.instagram.com/v12.0/me/media?fields=id,media_type,media_url,thumbnail_url,permalink,caption,timestamp&access_token=${accessToken}`,
-  };
+      function displayInstagramPosts(posts) {
+        instagramPostsTableBody.innerHTML = ""; // Clear existing posts
 
-  request(options, async (err, response, body) => {
-    if (err) {
-      console.error(err);
-      res.status(500).send('Internal Server Error');
-    } else {
-      const data = JSON.parse(body);
+        if (posts.data.length > 0) {
+          posts.data.forEach(post => {
+            const row = document.createElement("tr");
+            const mediaCell = document.createElement("td");
 
-      // Save each post to the database
-      for (const postData of data.data) {
-        try {
-          const instagramPost = new InstagramPost(postData);
-          const savedPost = await instagramPost.save();
-          console.log('Post saved to the database:', savedPost);
-        } catch (saveErr) {
-          console.error('Error saving post to the database:', saveErr);
+            if (post.media_type === 'IMAGE') {
+              mediaCell.innerHTML = `<a href="${post.media_url}" target="_blank"><img src="${post.media_url}" alt="Media"></a>`;
+            } else if (post.media_type === 'VIDEO') {
+              mediaCell.innerHTML = `<a href="${post.media_url}" target="_blank"><video controls><source src="${post.media_url}" type="video/mp4"></video></a>`;
+            }
+
+            row.appendChild(mediaCell);
+            row.innerHTML += `<td>${post.caption ? post.caption : "No caption"}</td>`;
+            row.innerHTML += `<td>${formatTimestamp(post.timestamp)}</td>`;
+
+            instagramPostsTableBody.appendChild(row);
+          });
+        } else {
+          const row = document.createElement("tr");
+          row.innerHTML = "<td colspan='3'>No Instagram posts available.</td>";
+          instagramPostsTableBody.appendChild(row);
         }
       }
 
-      res.json(data);
-    }
-  });
-});
+      // Initial request to fetch Instagram posts
+      fetchInstagramPosts();
 
+      // Set interval to update posts every 5 minutes (adjust as needed)
+      setInterval(fetchInstagramPosts, 300000); // 5 minutes in milliseconds
+    });
+  </script>
 
-app.post('/create-meeting', createMeeting);
-app.post('/get-meeting', getMeeting);
-app.put('/update-meeting/:id',updateMeeting)
+</body>
 
-
-
-const { subscriberCreate, getCreateSubscriber } = require('./handlers/subscriber_handler');
-const { createContact, getContact ,getInstagram } = require('./handlers/contact_handler');
-
-app.post('/create-contact', createContact);
-app.post('/get-contact', getContact);
-app.get('/instagram-posts', getInstagram);
-
-
-// Port tanımlaması
-const port = process.env.PORT || 4000;
-
-app.use(express.json());
-app.use('/api', protect, Router);
-
-app.get('/', (req, res) => {
-  res.send('Hello World!');
-});
-app.post('/subscriber-create', subscriberCreate); // Abone olma
-app.get('/subscriber-get', getCreateSubscriber); // abone listeleme
-
-app.put('/new-password', handleInputErrors, newPasswordUser);
-app.get('/users', handleInputErrors, getUserList);
-app.post('/user-register', userRegisterValidationRules, handleInputErrors, registerUser);
-app.post('/user-login', userLoginValidationRules, handleInputErrors, loginUser);
-// app.post('/user-logout/:id', handleInputErrors, logoutUser);
-// app.delete('/user-delete/:id', handleInputErrors, deleteUser);
-
-const startServer = () => {
-  try {
-    // Connect to DB
-    connectDB();
-
-    // Start & Listen to the requests
-    app.listen(port, () => console.log(`Server started listening on ${port}`));
-  } catch (error) {
-    console.log(error);
-  }
-};
-
-startServer();
+</html>

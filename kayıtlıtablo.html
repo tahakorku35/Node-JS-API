@@ -1,3 +1,4 @@
+<!-- 
 <!DOCTYPE html>
 <html lang="en">
 
@@ -83,22 +84,10 @@
             const row = instagramPostsTableBody.insertRow();
             const mediaCell = row.insertCell(0);
 
-            if (post.media_type === 'CAROUSEL') {
-              // If it's a carousel, display each media item
-              post.media_items.forEach(item => {
-                if (item.media_type === 'IMAGE') {
-                  mediaCell.innerHTML += `<a href="${item.media_url}" target="_blank"><img src="${item.media_url}" alt="Media"></a>`;
-                } else if (item.media_type === 'VIDEO') {
-                  mediaCell.innerHTML += `<a href="${item.media_url}" target="_blank"><video controls><source src="${item.media_url}" type="video/mp4"></video></a>`;
-                }
-              });
-            } else {
-              // If it's a single media item (image or video)
-              if (post.media_type === 'IMAGE') {
-                mediaCell.innerHTML = `<a href="${post.media_url}" target="_blank"><img src="${post.media_url}" alt="Media"></a>`;
-              } else if (post.media_type === 'VIDEO') {
-                mediaCell.innerHTML = `<a href="${post.media_url}" target="_blank"><video controls><source src="${post.media_url}" type="video/mp4"></video></a>`;
-              }
+            if (post.media_type === 'IMAGE') {
+              mediaCell.innerHTML = `<a href="${post.media_url}" target="_blank"><img src="${post.media_url}" alt="Media"></a>`;
+            } else if (post.media_type === 'VIDEO') {
+              mediaCell.innerHTML = `<a href="${post.media_url}" target="_blank"><video controls><source src="${post.media_url}" type="video/mp4"></video></a>`;
             }
 
             row.insertCell(1).innerText = 'metayildiztr'; // Static username
@@ -118,4 +107,26 @@
 
 </body>
 
-</html>
+</html> -->
+
+node js kodu 
+
+
+<!-- app.get('/getInstagram', (req, res) => {
+  const accessToken = process.env.INSTAGRAM_API_ACCESS_TOKEN;
+
+  const options = {
+    method: 'GET',
+    url: `https://graph.instagram.com/v12.0/me/media?fields=id,media_type,media_url,thumbnail_url,permalink,caption,timestamp&access_token=${accessToken}`,
+  };
+
+  request(options, (err, response, body) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send('Internal Server Error');
+    } else {
+      const data = JSON.parse(body);
+      res.json(data);
+    }
+  });
+}) -->

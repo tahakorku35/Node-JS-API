@@ -3,6 +3,8 @@ const bodyParser = require('body-parser');
 const nodeMailer = require("nodemailer");
 const https = require('https');
 const request = require('request');
+const axios = require('axios');
+const linkedin = require('linkedin-api');
 
 const cors = require('cors');
 const app = express();
@@ -28,7 +30,7 @@ app.get('/getInstagram', (req, res) => {
 
   const options = {
     method: 'GET',
-    url: `https://graph.instagram.com/v12.0/me/media?fields=id,media_type,media_url,thumbnail_url,permalink,caption,timestamp&access_token=${accessToken}`,
+    url: `https://graph.instagram.com/v12.0/me/media?fields=id,media_type,media_url,thumbnail_url,permalink,caption,timestamp,children{media_type,media_url,thumbnail_url}&access_token=${accessToken}`,
   };
 
   request(options, (err, response, body) => {
@@ -36,11 +38,39 @@ app.get('/getInstagram', (req, res) => {
       console.error(err);
       res.status(500).send('Internal Server Error');
     } else {
-      const data = JSON.parse(body);
-      res.json(data);
+      try {
+        const data = JSON.parse(body);
+        const processedData = processCarouselPosts(data);
+        res.json(processedData);
+      } catch (error) {
+        console.error('JSON parse hatası:', error);
+        res.status(500).send('Internal Server Error');
+      }
     }
   });
-})
+});
+
+function processCarouselPosts(data) {
+  if (!data.data || !Array.isArray(data.data)) {
+    return data;
+  }
+
+  data.data.forEach(post => {
+   
+    if (post.media_type === 'CAROUSEL_ALBUM' && post.children && Array.isArray(post.children.data)) {
+
+      post.media_type = 'CAROUSEL';
+
+      
+      post.media_items = post.children.data;
+
+     
+      delete post.children;
+    }
+  });
+
+  return data;
+}
 
 // Function to make a request using the 'request' library
 function makeRequest(options) {
@@ -54,6 +84,8 @@ function makeRequest(options) {
     });
   });
 }
+
+
 
 
 app.post('/create-meeting', createMeeting);
