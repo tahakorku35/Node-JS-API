@@ -22,7 +22,10 @@ const { registerUser, loginUser, getUserList, newPasswordUser, logoutUser, delet
 const { protect } = require('./modules/auth');
 
 const { createMeeting, updateMeeting,getMeeting } = require('./handlers/meeting_handler');
+const { createMessage, getMessage } = require('./handlers/message_handler');
 
+app.post('/create-message', createMessage);
+app.get('/get-message', createMessage);
 
 
 app.get('/getInstagram', (req, res) => {
