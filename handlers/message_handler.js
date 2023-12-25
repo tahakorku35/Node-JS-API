@@ -18,12 +18,12 @@ async function sendEmailToUser(name, email, message) {
   try {
     // nodemailer transport oluştur
     let transporter = nodemailer.createTransport({
-      host: process.env.SMPT_HOST,
-      port: process.env.SMPT_PORT,
+      host: process.env.SMPT_HOST1,
+      port: process.env.SMPT_PORT1,
       secure: true,
       auth: {
-        user: process.env.SMPT_MAIL,
-        pass: process.env.SMPT_PASSWORD
+        user: process.env.SMPT_MAIL1,
+        pass: process.env.SMPT_PASSWORD1
       }
     });
 
@@ -48,12 +48,12 @@ async function sendEmailToYourself(name, email, subject, message) {
   try {
     // nodemailer transport oluştur
     let transporter = nodemailer.createTransport({
-      host: process.env.SMPT_HOST,
-      port: process.env.SMPT_PORT,
+      host: process.env.SMPT_HOST1,
+      port: process.env.SMPT_PORT1,
       secure: true,
       auth: {
-        user: process.env.SMPT_MAIL,
-        pass: process.env.SMPT_PASSWORD
+        user: process.env.SMPT_MAIL1,
+        pass: process.env.SMPT_PASSWORD1
       }
     });
 
