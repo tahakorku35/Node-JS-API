@@ -4,6 +4,7 @@ const nodeMailer = require("nodemailer");
 const https = require('https');
 const request = require('request');
 const axios = require('axios');
+const linkedin = require('linkedin-api');
 
 const cors = require('cors');
 const app = express();
@@ -25,7 +26,9 @@ const { createMeeting, updateMeeting,getMeeting } = require('./handlers/meeting_
 const { createMessage, getMessage } = require('./handlers/message_handler');
 
 app.post('/create-message', createMessage);
-app.get('/get-message', createMessage);
+app.get('/get-message', getMessage);
+
+
 
 
 app.get('/getInstagram', (req, res) => {
