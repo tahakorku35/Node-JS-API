@@ -5,6 +5,7 @@ const https = require('https');
 const request = require('request');
 const axios = require('axios');
 const mongoose = require('mongoose');
+const NodeCache = require('node-cache');
 
 const cors = require('cors');
 const app = express();
@@ -53,10 +54,10 @@ const Instagramss = mongoose.model('Instagramss', instagramSchemaa);  // Use 'In
 
 app.get('/getSaveInstagram', async (req, res) => {
   const accessToken = process.env.INSTAGRAM_API_ACCESS_TOKEN;
-  const pageSize = 50; // Adjust the page size as needed
+  const pageSize = 50; 
 
   try {
-    // Fetch user profile to get the username
+    // kullanıcı adı getirme
     const profileOptions = {
       method: 'GET',
       url: `https://graph.instagram.com/v12.0/me?fields=username&access_token=${accessToken}`,
@@ -78,13 +79,13 @@ app.get('/getSaveInstagram', async (req, res) => {
 
       allPosts = allPosts.concat(data.data);
 
-      // Check for pagination
+      
       nextUrl = data.paging && data.paging.next;
     }
 
     const processedData = processCarouselPosts({ data: allPosts }, username);
 
-    // Save processed data to the database
+    // gelen verileri kaydetme
     await saveToDatabase({ data: allPosts });
 
     res.json(processedData);
@@ -110,7 +111,7 @@ function processCarouselPosts(data, username) {
       delete post.children;
     }
 
-    post.username = username; // Add the username to the processed data
+    post.username = username; 
   });
 
   return data;
@@ -148,6 +149,109 @@ async function saveToDatabase(data) {
   }
 }
 
+// instagram post çekme kod bitişi
+
+
+
+
+// instagram reels videolar
+const reelSchema = new mongoose.Schema({
+  id: String,
+  media_type: String,
+  media_url: String,
+  thumbnail_url: String,
+  permalink: String,
+  caption: String,
+  timestamp: Date,
+  username: String,
+});
+
+const Reel = mongoose.model('Reel', reelSchema);
+const cache = new NodeCache({ stdTTL: 300 });
+
+// Express route to fetch and save Instagram reels
+app.get('/getSaveInstagramReels', async (req, res) => {
+  const accessToken = process.env.INSTAGRAM_API_ACCESS_TOKEN; // Replace with your Instagram API access token
+
+  try {
+    // Check if MongoDB connection is open
+    if (mongoose.connection.readyState !== 1) {
+      console.error('MongoDB connection is not open.');
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+
+    // Fetch Instagram profile data to get the username
+    const profileResponse = await axios.get(`https://graph.instagram.com/v12.0/me?fields=username&access_token=${accessToken}`);
+    const username = profileResponse.data.username;
+
+    let nextUrl = `https://graph.instagram.com/v12.0/me/media?fields=id,media_type,media_url,thumbnail_url,permalink,caption,timestamp&access_token=${accessToken}&limit=100`;
+    const savedReels = [];
+
+    // Fetch reels data from Instagram API with pagination
+    while (nextUrl) {
+      const reelsResponse = await axios.get(nextUrl);
+      const reelsData = reelsResponse.data;
+
+      // Check if the response contains valid data
+      if (!reelsData.data || !Array.isArray(reelsData.data)) {
+        return res.status(500).json({ error: 'Invalid response from Instagram API' });
+      }
+
+      // Save each reel to the database
+      for (const reel of reelsData.data) {
+        // Only consider "VIDEO" media type content
+        if (reel.media_type === 'VIDEO') {
+          try {
+            // Handle different timestamp formats
+            const timestamp = reel.timestamp ? (reel.timestamp < 10000000000 ? new Date(reel.timestamp * 1000) : new Date(reel.timestamp)) : null;
+
+            console.log('Reel ID:', reel.id, 'Timestamp:', reel.timestamp, 'Formatted Timestamp:', timestamp);
+
+            if (timestamp instanceof Date && !isNaN(timestamp)) {
+              const existingReel = await Reel.findOne({ id: reel.id });
+
+              if (!existingReel) {
+                const reelInstance = new Reel({
+                  id: reel.id,
+                  media_type: reel.media_type,
+                  media_url: reel.media_url,
+                  thumbnail_url: reel.thumbnail_url,
+                  permalink: reel.permalink,
+                  caption: reel.caption,
+                  timestamp: timestamp,
+                  username: username,
+                });
+
+                const savedReel = await reelInstance.save();
+                savedReels.push(savedReel);
+              } else {
+                console.log(`Duplicate entry found for reel ID ${reel.id}. Skipping.`);
+              }
+            } else {
+              console.log(`Invalid timestamp found for reel ID ${reel.id}. Skipping.`);
+            }
+          } catch (saveError) {
+            console.error('Error saving reel to the database:', saveError);
+            return res.status(500).json({ error: 'Error saving reel to the database', details: saveError.message });
+          }
+        }
+      }
+
+      nextUrl = reelsData.paging && reelsData.paging.next ? reelsData.paging.next : null;
+    }
+
+    // Save data to cache
+    cache.set('reels', savedReels);
+
+    res.json({ success: true, message: 'Instagram reels saved to the database.' });
+  } catch (error) {
+    console.error('Error fetching or saving Instagram reels:', error.response ? error.response.data : error.message);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+// instagram reels videolar
 
 
 
@@ -157,6 +261,7 @@ const { createContact, getContact ,getInstagram } = require('./handlers/contact_
 app.post('/create-contact', createContact);
 app.post('/get-contact', getContact);
 app.get('/instagram-posts', getInstagram);
+
 
 
 // Port tanımlaması
@@ -177,60 +282,6 @@ app.post('/user-register', userRegisterValidationRules, handleInputErrors, regis
 app.post('/user-login', userLoginValidationRules, handleInputErrors, loginUser);
 // app.post('/user-logout/:id', handleInputErrors, logoutUser);
 // app.delete('/user-delete/:id', handleInputErrors, deleteUser);
-
-// instagram hikayeler
-
-const storySchema = new mongoose.Schema({
-  id: String,
-  media_type: String,
-  media_url: String,
-  thumbnail_url: String,
-  timestamp: Date,
-  username: String,
-});
-
-// MongoDB için bir model oluşturun
-const InstagramStory = mongoose.model('InstagramStory', storySchema);
-
-app.get('/getSaveInstagramStories', async (req, res) => {
-  const accessToken = process.env.INSTAGRAM_API_ACCESS_TOKEN;
-
-  try {
-    const storiesResponse = await axios.get(`https://graph.instagram.com/v12.0/me/stories?access_token=${accessToken}`);
-    const storiesData = storiesResponse.data;
-
-    if (!storiesData.data || !Array.isArray(storiesData.data)) {
-      return res.status(500).json({ error: 'Invalid response from Instagram API' });
-    }
-
-    const username = storiesData.data[0]?.owner?.username || 'unknown';
-
-    // Save each story to the database
-    for (const story of storiesData.data) {
-      const existingStory = await InstagramStory.findOne({ id: story.id });
-
-      if (!existingStory) {
-        const instagramStoryInstance = new InstagramStory({
-          id: story.id,
-          media_type: story.media_type,
-          media_url: story.media_url,
-          thumbnail_url: story.thumbnail_url,
-          timestamp: new Date(story.taken_at_timestamp * 1000), // Convert seconds to milliseconds
-          username: username,
-        });
-
-        await instagramStoryInstance.save();
-      } else {
-        console.log(`Duplicate entry found for story ID ${story.id}. Skipping.`);
-      }
-    }
-
-    res.json({ success: true, message: 'Instagram stories saved to the database.' });
-  } catch (error) {
-    console.error('Error fetching Instagram stories:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
-});
 
 
 
